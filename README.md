@@ -18,16 +18,16 @@
 - [🐛 Troubleshooting](#troubleshooting)
 - [🤝 Contributing](#contributing)
 
----
+***
 
 ## 🎯 Quick Start
 
 ### Prerequisites
 - **Node.js**: 18.0+
 - **pnpm**: 8.0+
-- **Hedera Account**: Get from https://portal.hedera.com
-- **Gemini API Key**: Get from https://aistudio.google.com/apikey
-- **Vincent App ID**: Create in https://heyvincent.ai
+- **Hedera Account**: Get from [https://portal.hedera.com](https://portal.hedera.com)
+- **Gemini API Key**: Get from [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- **Vincent App ID**: Create in [https://heyvincent.ai](https://heyvincent.ai)
 
 ### Installation (2 minutes)
 
@@ -50,297 +50,164 @@ pnpm dev
 curl http://localhost:3001/api/health
 ```
 
----
+***
 
 ## 🏗️ Architecture Overview
 
 ### High-Level System Design
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    SaucerHedge Backend Architecture                      │
-└─────────────────────────────────────────────────────────────────────────┘
-
-                          🌐 Frontend (React/Vite)
-                                  ▲
-                                  │ HTTP/REST
-                                  ▼
-                  ┌──────────────────────────────────┐
-                  │   Express.js HTTP Server         │
-                  │   (Port 3001)                    │
-                  │   ┌──────────────────────────┐   │
-                  │   │  CORS Middleware         │   │
-                  │   │  Error Handling          │   │
-                  │   │  Request Logging         │   │
-                  │   └──────────────────────────┘   │
-                  └────────────┬─────────────────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-      ┌──────────────┐  ┌─────────────┐  ┌──────────┐
-      │ Chat Routes  │  │ Auth Routes │  │ Health   │
-      │              │  │             │  │ Routes   │
-      └──────┬───────┘  └──────┬──────┘  └──────────┘
-             │                 │
-             ▼                 ▼
-      ┌──────────────────────────────────┐
-      │  HederaAgent (AI Orchestrator)   │
-      │  ┌─────────────────────────────┐ │
-      │  │ Gemini 2.5 Flash LLM       │ │
-      │  │ Tool Selection Logic       │ │
-      │  │ Conversation Management    │ │
-      │  │ Response Formatting        │ │
-      │  └─────────────────────────────┘ │
-      └────────┬─────────────────────────┘
-               │
-   ┌───────────┼───────────┬─────────────┐
-   ▼           ▼           ▼             ▼
-┌────────┐ ┌──────────┐ ┌─────────┐ ┌──────────┐
-│Ability │ │Transaction│Vincent │ │Response  │
-│Loader  │ │Service   │Service │ │Formatter │
-│        │ │          │        │ │          │
-└───┬────┘ └─────┬────┘ └───┬───┘ └──────────┘
-    │            │          │
-    ▼            ▼          ▼
-┌────────────────────────────────────────┐
-│ Ability Executor                       │
-│ ┌──────────────────────────────────┐  │
-│ │ Dynamic Ability Execution        │  │
-│ │ Parameter Building               │  │
-│ │ Result Parsing                   │  │
-│ └──────────────────────────────────┘  │
-└────┬───────────────────────────────────┘
-     │
-     ├──────────────────┬─────────────┐
-     ▼                  ▼             ▼
-┌──────────────┐ ┌──────────────┐ ┌─────────────┐
-│   Hedera     │ │ NPM Registry │ │ Published   │
-│   Network    │ │(@saucerhedge)│ │ Abilities   │
-│   Testnet    │ └──────────────┘ │             │
-│ & Mainnet    │                  │ 1. open-pos │
-└──────────────┘                  │ 2. close-.. │
-                                  │ 3. deposit  │
-                                  │ 4. get-st.. │
-                                  │ 5. open-v.. │
-                                  │ 6. close-v. │
-                                  └─────────────┘
-
-                ┌──────────────────────────────┐
-                │ State Management             │
-                │ ├─ Conversation History      │
-                │ ├─ Execution Logs            │
-                │ ├─ Transaction Cache         │
-                │ └─ User Sessions             │
-                └──────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Frontend["🌐 Frontend (React/Vite)"]
+    end
+    
+    subgraph Server["Express.js HTTP Server (Port 3001)"]
+        CORS["CORS Middleware"]
+        Error["Error Handling"]
+        Logging["Request Logging"]
+    end
+    
+    subgraph Routes["API Routes"]
+        ChatRoutes["Chat Routes"]
+        AuthRoutes["Auth Routes"]
+        HealthRoutes["Health Routes"]
+    end
+    
+    subgraph Agent["HederaAgent (AI Orchestrator)"]
+        LLM["Gemini 2.5 Flash LLM"]
+        ToolSelect["Tool Selection Logic"]
+        ConvMgmt["Conversation Management"]
+        RespFormat["Response Formatting"]
+    end
+    
+    subgraph Services["Core Services"]
+        AbilityLoader["Ability Loader"]
+        TransactionSvc["Transaction Service"]
+        VincentSvc["Vincent Service"]
+        ResponseFormatter["Response Formatter"]
+    end
+    
+    subgraph Executor["Ability Executor"]
+        DynamicExec["Dynamic Ability Execution"]
+        ParamBuild["Parameter Building"]
+        ResultParse["Result Parsing"]
+    end
+    
+    subgraph External["External Integration"]
+        Hedera["Hedera Network<br/>(Testnet & Mainnet)"]
+        NPM["NPM Registry<br/>(@saucerhedge)"]
+        Abilities["Published Abilities<br/>1. open-position<br/>2. close-position<br/>3. deposit<br/>4. get-status<br/>5. open-vault<br/>6. close-vault"]
+    end
+    
+    subgraph State["State Management"]
+        History["Conversation History"]
+        Logs["Execution Logs"]
+        Cache["Transaction Cache"]
+        Sessions["User Sessions"]
+    end
+    
+    Frontend <-->|HTTP/REST| Server
+    Server --> Routes
+    Routes --> Agent
+    Agent --> Services
+    Services --> Executor
+    Executor --> External
+    Agent -.-> State
+    
+    style Frontend fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style Agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Executor fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style External fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style State fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 ```
 
----
+***
 
 ## 📊 Detailed System Design
 
-### Component Interaction & Request Processing Pipeline
-
-```
-┌────────────────────────────────────────────────────────────────────────────┐
-│                       REQUEST PROCESSING PIPELINE                          │
-└────────────────────────────────────────────────────────────────────────────┘
-
-USER REQUEST
-    │
-    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 1. HTTP Server (Express)                                              │
-│    ├─ Parse JSON request body                                         │
-│    ├─ Validate CORS headers                                           │
-│    └─ Log incoming request                                            │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 2. Route Handler (/api/chat)                                          │
-│    ├─ Extract userMessage & conversationHistory                       │
-│    ├─ Generate unique userId (session)                                │
-│    └─ Pass to HederaAgent.processMessage()                            │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 3. HederaAgent (Main Orchestrator)                                     │
-│    ├─ Load conversation history for user                              │
-│    ├─ Build message array with system prompt                          │
-│    ├─ Call Gemini 2.5 Flash LLM with tools                           │
-│    └─ Parse LLM response (text + tool_use blocks)                     │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ├────────────────────────────────┐
-              │                                │
-              ▼                                ▼
-     ┌──────────────────────┐        ┌──────────────────────┐
-     │ NO TOOL SELECTED     │        │ TOOL SELECTED        │
-     │                      │        │                      │
-     │ Return text response │        │ Execute ability      │
-     │ from LLM             │        │                      │
-     └──────┬───────────────┘        └────────┬─────────────┘
-            │                                │
-            └────────────┬───────────────────┘
-                         │
-                         ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 4. Tool Selection & Routing (if tool was used)                        │
-│    ├─ Get tool name from LLM response                                 │
-│    ├─ Map tool name → ability name                                    │
-│    └─ Validate tool inputs against schema                             │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 5. AbilityExecutor.executeAbility()                                    │
-│    ├─ Retrieve ability metadata from cache/NPM                        │
-│    ├─ Build ContractExecuteTransaction                                │
-│    ├─ Validate parameters                                             │
-│    └─ Send to Hedera network                                          │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 6. TransactionService (Hedera Integration)                             │
-│    ├─ Execute contract call on testnet/mainnet                        │
-│    ├─ Wait for receipt confirmation                                   │
-│    ├─ Parse transaction results                                       │
-│    └─ Store execution in history                                      │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 7. ResponseFormatter (Dynamic Response Generation)                     │
-│    ├─ Get ability-specific template                                   │
-│    ├─ Inject dynamic data from execution result                       │
-│    ├─ Format as markdown with tables/lists                            │
-│    └─ Add transaction hash and metadata                               │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 8. Response Object                                                     │
-│    {                                                                   │
-│      id: string                   (timestamp)                          │
-│      role: 'assistant'                                                │
-│      content: string              (markdown)                           │
-│      timestamp: Date                                                   │
-│      txHash?: string              (transaction link)                  │
-│      abilities?: string[]         (tools used)                        │
-│    }                                                                   │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 9. Update Conversation History                                         │
-│    ├─ Store user message                                              │
-│    ├─ Store assistant response                                        │
-│    └─ Keep last 50 messages in memory                                 │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 10. Return HTTP Response (JSON)                                        │
-│     ├─ Set Content-Type: application/json                             │
-│     ├─ Set CORS headers                                               │
-│     └─ Send response to frontend                                      │
-└─────────────┬────────────────────────────────────────────────────────┘
-              │
-              ▼
-          📱 Frontend
-```
-
 ### Multi-Layer Architecture
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                     LAYERED ARCHITECTURE                               │
-└────────────────────────────────────────────────────────────────────────┘
-
-LAYER 7 - Presentation Layer
-┌────────────────────────────────────────────────────────────────────────┐
-│ HTTP Response Formatting                                               │
-│ ├─ JSON Serialization                                                 │
-│ ├─ CORS Headers                                                       │
-│ └─ Error Response Formatting                                          │
-└────────────────────────────────────────────────────────────────────────┘
-                               ▲
-                               │
-LAYER 6 - Application Layer
-┌────────────────────────────────────────────────────────────────────────┐
-│ HederaAgent (Main Orchestrator)                                        │
-│ ├─ LLM Integration (Gemini 2.5 Flash)                                 │
-│ ├─ Tool Selection Logic                                               │
-│ ├─ Conversation Management                                            │
-│ └─ Error Handling & Fallbacks                                         │
-└────────────────────────────────────────────────────────────────────────┘
-                               ▲
-                               │
-LAYER 5 - Business Logic Layer
-┌────────────────────────────────────────────────────────────────────────┐
-│ Services Layer                                                         │
-│ ┌──────────────┬─────────────────┬──────────────────────────────────┐ │
-│ │AbilityExecutor│ TransactionSvc  │ VincentService                 │ │
-│ │              │                 │                                  │ │
-│ │• Loader      │ • Builder       │ • Auth URL Gen                  │ │
-│ │• Executor    │ • Executor      │ • Delegation Scope              │ │
-│ │• Cache       │ • Monitor       │ • Validation                    │ │
-│ └──────────────┴─────────────────┴──────────────────────────────────┘ │
-│ ┌──────────────────────────────────────────────────────────────────┐  │
-│ │ ResponseFormatter                                                │  │
-│ │ • Ability-specific templates                                   │  │
-│ │ • Dynamic content injection                                    │  │
-│ │ • Markdown formatting                                          │  │
-│ └──────────────────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────┘
-                               ▲
-                               │
-LAYER 4 - Data Access Layer
-┌────────────────────────────────────────────────────────────────────────┐
-│ Tool Management                                                        │
-│ ├─ AbilityLoader: Fetch from NPM Registry                             │
-│ ├─ ToolDefinitions: Generate tool schemas                             │
-│ ├─ ToolMapping: Map names to abilities                                │
-│ └─ ToolExecution: Execute with parameters                             │
-└────────────────────────────────────────────────────────────────────────┘
-                               ▲
-                               │
-LAYER 3 - External Integration Layer
-┌────────────────────────────────────────────────────────────────────────┐
-│ External Services                                                      │
-│ ┌──────────┐ ┌──────────────┐ ┌───────────┐ ┌────────────────────┐   │
-│ │Gemini LLM│ │ Hedera SDK   │ │NPM Regist.│ │ Vincent Protocol   │   │
-│ │          │ │              │ │           │ │                    │   │
-│ │• Chat API│ │• Client      │ │• Packages │ │• Auth              │   │
-│ │• Tools   │ │• Contracts   │ │• Metadata │ │• Abilities         │   │
-│ └──────────┘ └──────────────┘ └───────────┘ └────────────────────┘   │
-└────────────────────────────────────────────────────────────────────────┘
-                               ▲
-                               │
-LAYER 2 - Configuration Layer
-┌────────────────────────────────────────────────────────────────────────┐
-│ Config Management                                                      │
-│ ├─ Environment Variables (.env)                                       │
-│ ├─ Hedera Client Initialization                                       │
-│ ├─ LLM Configuration                                                  │
-│ └─ Constants & Credentials                                            │
-└────────────────────────────────────────────────────────────────────────┘
-                               ▲
-                               │
-LAYER 1 - Infrastructure Layer
-┌────────────────────────────────────────────────────────────────────────┐
-│ HTTP Server & Middleware                                               │
-│ ├─ Express.js Server                                                  │
-│ ├─ CORS Middleware                                                    │
-│ ├─ Error Handler                                                      │
-│ ├─ Request Logger                                                     │
-│ └─ Route Definitions                                                  │
-└────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    User["👤 USER REQUEST"]
+    
+    subgraph Layer1["LAYER 1: HTTP Server & Middleware"]
+        Express["Express.js Server"]
+        CORSMid["CORS Middleware"]
+        ErrorHandler["Error Handler"]
+        ReqLogger["Request Logger"]
+        RouteDef["Route Definitions"]
+    end
+    
+    subgraph Layer2["LAYER 2: Route Handler"]
+        ParseReq["Parse JSON Request"]
+        ValidCORS["Validate CORS Headers"]
+        LogReq["Log Incoming Request"]
+        ExtractMsg["Extract userMessage & history"]
+        GenUserID["Generate unique userId"]
+    end
+    
+    subgraph Layer3["LAYER 3: HederaAgent Orchestrator"]
+        LoadHistory["Load conversation history"]
+        BuildMsg["Build message array with system prompt"]
+        CallLLM["Call Gemini 2.5 Flash LLM"]
+        ParseResp["Parse LLM response"]
+    end
+    
+    subgraph Layer4["LAYER 4: Tool Selection & Routing"]
+        GetTool["Get tool name from LLM"]
+        MapAbility["Map tool name → ability name"]
+        ValidInput["Validate tool inputs"]
+    end
+    
+    subgraph Layer5["LAYER 5: Ability Executor"]
+        RetrieveMeta["Retrieve ability metadata"]
+        BuildTx["Build ContractExecuteTransaction"]
+        ValidParam["Validate parameters"]
+        SendHedera["Send to Hedera network"]
+    end
+    
+    subgraph Layer6["LAYER 6: Transaction Service"]
+        ExecContract["Execute contract call"]
+        WaitReceipt["Wait for receipt confirmation"]
+        ParseTx["Parse transaction results"]
+        StoreExec["Store execution in history"]
+    end
+    
+    subgraph Layer7["LAYER 7: Response Formatter"]
+        GetTemplate["Get ability-specific template"]
+        InjectData["Inject dynamic data"]
+        FormatMD["Format as markdown"]
+        AddTxHash["Add transaction hash"]
+    end
+    
+    subgraph Layer8["LAYER 8: Final Response"]
+        UpdateHistory["Update Conversation History"]
+        ReturnJSON["Return HTTP Response (JSON)"]
+    end
+    
+    User --> Layer1
+    Layer1 --> Layer2
+    Layer2 --> Layer3
+    Layer3 --> Layer4
+    Layer4 --> Layer5
+    Layer5 --> Layer6
+    Layer6 --> Layer7
+    Layer7 --> Layer8
+    Layer8 -->|Response| User
+    
+    style User fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
+    style Layer1 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style Layer2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style Layer3 fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style Layer4 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Layer5 fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style Layer6 fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    style Layer7 fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style Layer8 fill:#ede7f6,stroke:#512da8,stroke-width:2px
 ```
 
----
+***
 
 ## 🚀 Installation & Setup
 
@@ -408,7 +275,7 @@ curl http://localhost:3001/api/health
 # ... (4 more abilities)
 ```
 
----
+***
 
 ## 📡 API Documentation
 
@@ -504,93 +371,84 @@ curl -X POST http://localhost:3001/api/auth/auth-url \
 }
 ```
 
----
+***
 
 ## 🔄 Request Flow
 
-### Complete Request Flow Diagram
+### Complete Request Processing Pipeline
 
-```
-User Types Message
-    │
-    ▼
-┌────────────────────────────────────┐
-│ Frontend sends POST /api/chat      │
-│ Body: {message, history}           │
-└──────────┬────────────────────────┘
-           │
-           ▼
-  🖥️ Backend Server
-  ┌────────────────────────────────────┐
-  │ 1. Parse & Validate Request        │
-  │    ✓ Extract message text          │
-  │    ✓ Validate JSON format          │
-  │    ✓ Check message length          │
-  └────────────┬────────────────────────┘
-               │
-               ▼
-  ┌────────────────────────────────────┐
-  │ 2. HederaAgent.processMessage()    │
-  │    ✓ Load conversation history     │
-  │    ✓ Build system prompt           │
-  │    ✓ Build message array           │
-  └────────────┬────────────────────────┘
-               │
-               ▼
-  ┌────────────────────────────────────┐
-  │ 3. Call Gemini 2.5 Flash LLM       │
-  │    📡 Send to Google API            │
-  │    ⏳ Wait for response (1-3s)     │
-  │    ✓ Parse LLM response            │
-  └────────────┬────────────────────────┘
-               │
-        ┌──────┴──────┐
-        │ DECISION    │
-        ▼             ▼
-  [TEXT ONLY]    [TOOL SELECTED]
-        │             │
-        │             ▼
-        │      ┌───────────────────────┐
-        │      │ 4. Tool Execution     │
-        │      │    ✓ Map tool→ability │
-        │      │    ✓ Validate inputs  │
-        │      │    ✓ Execute ability  │
-        │      │    ✓ Get results      │
-        │      └─────────┬─────────────┘
-        │                │
-        │                ▼
-        │      ┌───────────────────────┐
-        │      │ 5. Format Response    │
-        │      │    ✓ Use template     │
-        │      │    ✓ Inject data      │
-        │      │    ✓ Add tx hash      │
-        │      └─────────┬─────────────┘
-        │                │
-        └────────┬───────┘
-                 │
-                 ▼
-  ┌────────────────────────────────────┐
-  │ 6. Update Conversation History     │
-  │    ✓ Save user message             │
-  │    ✓ Save assistant response       │
-  └────────────┬────────────────────────┘
-               │
-               ▼
-  ┌────────────────────────────────────┐
-  │ 7. Return JSON Response            │
-  │    ✓ Set CORS headers              │
-  │    ✓ Set Content-Type              │
-  │    ✓ Send 200 OK                   │
-  └──────────────┬──────────────────────┘
-                 │
-                 ▼
-           📱 Frontend
-           Display response
-           Update chat UI
-           Show transaction link
+```mermaid
+flowchart TD
+    Start["👤 User Types Message"]
+    
+    subgraph Step1["1️⃣ Frontend POST Request"]
+        SendPost["Frontend sends POST /api/chat<br/>Body: {message, history}"]
+    end
+    
+    subgraph Step2["2️⃣ Backend Server Processing"]
+        Parse["Parse & Validate Request<br/>✓ Extract message text<br/>✓ Validate JSON format<br/>✓ Check message length"]
+    end
+    
+    subgraph Step3["3️⃣ HederaAgent Processing"]
+        Process["HederaAgent.processMessage()<br/>✓ Load conversation history<br/>✓ Build system prompt<br/>✓ Build message array"]
+    end
+    
+    subgraph Step4["4️⃣ LLM Interaction"]
+        CallGemini["Call Gemini 2.5 Flash LLM<br/>📡 Send to Google API<br/>⏳ Wait for response (1-3s)<br/>✓ Parse LLM response"]
+    end
+    
+    Decision{"DECISION<br/>Tool Selected?"}
+    
+    subgraph Step5a["5️⃣a Text Response"]
+        TextOnly["Return text response from LLM"]
+    end
+    
+    subgraph Step5b["5️⃣b Tool Execution"]
+        ToolExec["Tool Execution<br/>✓ Map tool→ability<br/>✓ Validate inputs<br/>✓ Execute ability<br/>✓ Get results"]
+    end
+    
+    subgraph Step6["6️⃣ Format Response"]
+        Format["Format Response<br/>✓ Use template<br/>✓ Inject data<br/>✓ Add tx hash"]
+    end
+    
+    subgraph Step7["7️⃣ Update History"]
+        Update["Update Conversation History<br/>✓ Save user message<br/>✓ Save assistant response"]
+    end
+    
+    subgraph Step8["8️⃣ Return Response"]
+        Return["Return JSON Response<br/>✓ Set CORS headers<br/>✓ Set Content-Type<br/>✓ Send 200 OK"]
+    end
+    
+    EndUser["📱 Frontend<br/>Display response<br/>Update chat UI<br/>Show transaction link"]
+    
+    Start --> Step1
+    Step1 --> Step2
+    Step2 --> Step3
+    Step3 --> Step4
+    Step4 --> Decision
+    Decision -->|No Tool| Step5a
+    Decision -->|Tool Selected| Step5b
+    Step5a --> Step7
+    Step5b --> Step6
+    Step6 --> Step7
+    Step7 --> Step8
+    Step8 --> EndUser
+    
+    style Start fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
+    style Decision fill:#ffd43b,stroke:#f59f00,stroke-width:3px
+    style Step1 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style Step2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style Step3 fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style Step4 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Step5a fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style Step5b fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    style Step6 fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style Step7 fill:#ede7f6,stroke:#512da8,stroke-width:2px
+    style Step8 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style EndUser fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
 ```
 
----
+***
 
 ## 🛠️ Services Deep Dive
 
@@ -660,35 +518,17 @@ User Types Message
 - ✅ Table formatting
 - ✅ Transaction link generation
 
----
+***
 
 ## ⚡ Performance Optimization
 
 ### Caching Strategy
 
-```
-┌─────────────────────────────────────┐
-│ Ability Metadata Cache (3600s TTL)  │
-├─────────────────────────────────────┤
-│ Key: @saucerhedgevault/ability-name │
-│ Value: AbilityMetadata object       │
-│ Miss Rate: ~5% (on new abilities)   │
-└─────────────────────────────────────┘
-```
-
-### Memory Management
-
-```
-Conversation History
-├─ Max 50 messages per user
-├─ Auto-cleanup on overflow
-└─ ~1KB per message = ~50KB per active user
-
-Execution Logs
-├─ Max 1000 logs total
-├─ Auto-cleanup on overflow
-└─ ~2KB per log = ~2MB max memory
-```
+| Cache Type | TTL | Miss Rate | Memory Impact |
+|------------|-----|-----------|---------------|
+| Ability Metadata | 3600s | ~5% | Minimal |
+| Conversation History | Session | N/A | ~50KB/user |
+| Execution Logs | Session | N/A | ~2MB max |
 
 ### Response Times (Benchmarks)
 
@@ -699,7 +539,7 @@ Execution Logs
 | Tool Execution | 2-5s | Hedera network |
 | Total Chat Response | 3-8s | Combined |
 
----
+***
 
 ## 🔐 Security Considerations
 
@@ -741,7 +581,7 @@ const validateToken = (token: string) => {
 - 5MB max request body size
 ```
 
----
+***
 
 ## 🐛 Troubleshooting
 
@@ -801,7 +641,7 @@ LOG_LEVEL=debug pnpm dev
 NODE_DEBUG=hedera,abilities pnpm dev
 ```
 
----
+***
 
 ## 🤝 Contributing
 
@@ -844,17 +684,17 @@ pnpm test -- hederaAgent
 pnpm test --watch
 ```
 
----
+***
 
 ## 📚 Additional Resources
 
-- **Hedera Docs**: https://docs.hedera.com
-- **Gemini API**: https://ai.google.dev
-- **Vincent Protocol**: https://docs.heyvincent.ai
-- **Express.js**: https://expressjs.com
-- **TypeScript**: https://www.typescriptlang.org
+- **Hedera Docs**: [https://docs.hedera.com](https://docs.hedera.com)
+- **Gemini API**: [https://ai.google.dev](https://ai.google.dev)
+- **Vincent Protocol**: [https://docs.heyvincent.ai](https://docs.heyvincent.ai)
+- **Express.js**: [https://expressjs.com](https://expressjs.com)
+- **TypeScript**: [https://www.typescriptlang.org](https://www.typescriptlang.org)
 
----
+***
 
 ## 📞 Support
 
@@ -863,7 +703,7 @@ pnpm test --watch
 - 📧 **Email**: support@saucerhedge.com
 - 🔗 **Discord**: https://discord.gg/saucerhedge
 
----
+***
 
 **Built with ❤️ by SaucerHedge Team**
 
